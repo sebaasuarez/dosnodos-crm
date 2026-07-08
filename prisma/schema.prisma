@@ -1,0 +1,537 @@
+// Dos Nodos Growth CRM — Modelo de datos
+// PostgreSQL + Prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Usuarios y roles
+// ─────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  COMERCIAL
+  MARKETING
+  LECTURA
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(COMERCIAL)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  conversations Conversation[] @relation("AssignedConversations")
+  tasks         Task[]         @relation("AssignedTasks")
+  notes         Note[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Leads
+// ─────────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NUEVO
+  ENRIQUECIDO
+  CALIFICADO
+  PENDIENTE_CONSENTIMIENTO
+  CONTACTO_PERMITIDO
+  PRIMER_CONTACTO
+  RESPONDIO
+  CONVERSACION_ACTIVA
+  INTERESADO
+  DIAGNOSTICO_ENVIADO
+  REUNION_AGENDADA
+  PROPUESTA_ENVIADA
+  NEGOCIACION
+  GANADO
+  PERDIDO
+  NO_CONTACTAR
+  OPT_OUT
+}
+
+enum ConsentStatus {
+  SIN_CONSENTIMIENTO // fuente pública, nunca ha dado permiso → WhatsApp bloqueado
+  PENDIENTE          // en proceso de captación de opt-in (email, landing, QR)
+  OPT_IN             // dio consentimiento explícito o escribió primero
+  OPT_OUT            // pidió no ser contactado → bloqueado permanente
+}
+
+enum LeadSourceType {
+  APIFY_GOOGLE_MAPS
+  LANDING_FORM
+  CLICK_TO_WHATSAPP
+  WHATSAPP_INBOUND
+  QR
+  ANUNCIO
+  REFERIDO
+  MANUAL
+}
+
+model Lead {
+  id            String         @id @default(cuid())
+  companyName   String
+  contactName   String?
+  phone         String?
+  email         String?
+  website       String?
+  address       String?
+  city          String?
+  country       String         @default("Colombia")
+  category      String?
+  source        LeadSourceType @default(MANUAL)
+  sourceUrl     String?
+  sourceDetail  String?        // p.ej. nombre de campaña, run de Apify
+  googleMapsUrl String?        @unique
+  rating        Float?
+  reviewsCount  Int?
+  openingHours  String?
+  socialMedia   Json?          // { instagram, facebook, tiktok, ... }
+
+  // Señales digitales detectadas
+  hasWebsite     Boolean @default(false)
+  hasWhatsapp    Boolean @default(false)
+  hasEmail       Boolean @default(false)
+  hasSocialMedia Boolean @default(false)
+
+  // Análisis de oportunidad
+  digitalOpportunitySummary String?
+  recommendedService        String?
+  recommendedPackage        String?
+  aiObservations            String?
+  score                     Int     @default(0)
+  scoreBreakdown            Json?
+
+  // Estado comercial y de consentimiento
+  status          LeadStatus    @default(NUEVO)
+  consentStatus   ConsentStatus @default(SIN_CONSENTIMIENTO)
+  optInDate       DateTime?
+  optOutDate      DateTime?
+  enrichedAt      DateTime?
+  lastInteraction DateTime?
+  nextFollowUpAt  DateTime?
+  nextStep        String?
+  lostReason      String?
+  assignedToId    String?
+
+  // Trazabilidad UTM
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversations      Conversation[]
+  messages           Message[]
+  notes              Note[]
+  tasks              Task[]
+  opportunities      Opportunity[]
+  meetings           Meeting[]
+  consentEvents      ConsentEvent[]
+  scoreHistory       LeadScore[]
+  campaignRecipients CampaignRecipient[]
+
+  @@index([status])
+  @@index([consentStatus])
+  @@index([score])
+  @@index([city, category])
+  @@index([phone])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model LeadScore {
+  id        String   @id @default(cuid())
+  leadId    String
+  score     Int
+  breakdown Json
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_scores")
+}
+
+// Registro auditable de opt-in / opt-out con evidencia y origen
+enum ConsentEventType {
+  OPT_IN
+  OPT_OUT
+  NO_CONTACTAR
+}
+
+model ConsentEvent {
+  id        String           @id @default(cuid())
+  leadId    String
+  type      ConsentEventType
+  channel   String           // whatsapp | email | landing | qr | manual
+  source    String?          // de dónde salió el consentimiento (URL, campaña, mensaje)
+  evidence  String?          // texto literal del mensaje/registro que lo prueba
+  createdAt DateTime         @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([type])
+  @@map("consent_events")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Campañas
+// ─────────────────────────────────────────────────────────────────
+
+enum CampaignType {
+  CAPTACION_OPT_IN // email/landing/QR → el prospecto escribe primero
+  SEGUIMIENTO      // solo leads con opt-in
+  REACTIVACION     // solo leads con opt-in previo
+  POR_SERVICIO
+}
+
+enum CampaignChannel {
+  WHATSAPP
+  EMAIL
+  LANDING
+  QR
+  ANUNCIO
+}
+
+enum CampaignStatus {
+  BORRADOR
+  ACTIVA
+  PAUSADA
+  FINALIZADA
+}
+
+model Campaign {
+  id             String          @id @default(cuid())
+  name           String
+  type           CampaignType
+  channel        CampaignChannel
+  status         CampaignStatus  @default(BORRADOR)
+  audienceFilter Json?           // { ciudades, categorias, scoreMin, consentStatus }
+  dailyLimit     Int             @default(20)
+  hourlyLimit    Int             @default(5)
+  allowedHoursStart Int          @default(8)  // hora local 24h
+  allowedHoursEnd   Int          @default(19)
+  startDate      DateTime?
+  endDate        DateTime?
+  templateId     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  template   WhatsappTemplate?   @relation(fields: [templateId], references: [id])
+  recipients CampaignRecipient[]
+
+  @@map("campaigns")
+}
+
+enum RecipientStatus {
+  PENDIENTE
+  PROGRAMADO
+  ENVIADO
+  RESPONDIO
+  BLOQUEADO // el guard de cumplimiento impidió el envío
+  OPT_OUT
+  ERROR
+}
+
+model CampaignRecipient {
+  id            String          @id @default(cuid())
+  campaignId    String
+  leadId        String
+  status        RecipientStatus @default(PENDIENTE)
+  scheduledAt   DateTime?
+  sentAt        DateTime?
+  respondedAt   DateTime?
+  blockedReason String?
+  createdAt     DateTime        @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, leadId])
+  @@index([status])
+  @@map("campaign_recipients")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Conversaciones y mensajes (WhatsApp via Kapso)
+// ─────────────────────────────────────────────────────────────────
+
+enum ConversationStatus {
+  ABIERTA
+  PENDIENTE_HUMANO // escalada, esperando agente
+  CERRADA
+}
+
+model Conversation {
+  id                  String             @id @default(cuid())
+  leadId              String
+  channel             String             @default("whatsapp")
+  kapsoConversationId String?            @unique
+  status              ConversationStatus @default(ABIERTA)
+  aiEnabled           Boolean            @default(true) // false = solo humano
+  lastMessageAt       DateTime?
+  lastInboundAt       DateTime?          // para ventana de 24h de WhatsApp
+  assignedToId        String?
+  aiSummary           String?
+  nextAction          String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  lead       Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo User?     @relation("AssignedConversations", fields: [assignedToId], references: [id])
+  messages   Message[]
+
+  @@index([leadId])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+enum MessageDirection {
+  ENTRANTE
+  SALIENTE
+}
+
+enum MessageStatus {
+  PENDIENTE
+  ENVIADO
+  ENTREGADO
+  LEIDO
+  FALLIDO
+  BLOQUEADO // rechazado por el guard de cumplimiento
+}
+
+model Message {
+  id                String           @id @default(cuid())
+  conversationId    String
+  leadId            String?
+  direction         MessageDirection
+  content           String
+  messageType       String           @default("text") // text | template | image | ...
+  templateName      String?
+  providerMessageId String?          @unique
+  status            MessageStatus    @default(PENDIENTE)
+  detectedIntent    String?
+  sentByAi          Boolean          @default(false)
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  failedReason      String?
+  createdAt         DateTime         @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lead         Lead?        @relation(fields: [leadId], references: [id])
+
+  @@index([conversationId])
+  @@index([direction, createdAt])
+  @@map("messages")
+}
+
+enum TemplateStatus {
+  BORRADOR
+  PENDIENTE_APROBACION
+  APROBADA
+  RECHAZADA
+}
+
+model WhatsappTemplate {
+  id        String         @id @default(cuid())
+  name      String         @unique
+  language  String         @default("es")
+  category  String         @default("MARKETING") // MARKETING | UTILITY
+  body      String
+  variables Json?          // ["nombre", "negocio", "servicio_recomendado"]
+  status    TemplateStatus @default(BORRADOR)
+  kapsoTemplateId String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  campaigns Campaign[]
+
+  @@map("whatsapp_templates")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Oportunidades, tareas, notas, reuniones
+// ─────────────────────────────────────────────────────────────────
+
+enum OpportunityStage {
+  DIAGNOSTICO
+  PROPUESTA
+  NEGOCIACION
+  GANADA
+  PERDIDA
+}
+
+model Opportunity {
+  id                String           @id @default(cuid())
+  leadId            String
+  service           String
+  packageName       String?
+  estimatedValue    Int              @default(0) // COP
+  stage             OpportunityStage @default(DIAGNOSTICO)
+  probability       Int              @default(30) // 0-100
+  expectedCloseDate DateTime?
+  notes             String?
+  lostReason        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([stage])
+  @@map("opportunities")
+}
+
+enum TaskStatus {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADA
+  CANCELADA
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  leadId       String?
+  title        String
+  description  String?
+  dueDate      DateTime?
+  status       TaskStatus @default(PENDIENTE)
+  assignedToId String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  lead       Lead? @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignedTo User? @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+  @@index([status, dueDate])
+  @@map("tasks")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  leadId    String
+  authorId  String?
+  content   String
+  createdAt DateTime @default(now())
+
+  lead   Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([leadId])
+  @@map("notes")
+}
+
+enum MeetingStatus {
+  AGENDADA
+  CONFIRMADA
+  REALIZADA
+  NO_ASISTIO
+  CANCELADA
+}
+
+model Meeting {
+  id            String        @id @default(cuid())
+  leadId        String
+  title         String
+  scheduledAt   DateTime
+  durationMin   Int           @default(15)
+  status        MeetingStatus @default(AGENDADA)
+  googleEventId String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledAt])
+  @@map("meetings")
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Lead Hunter (Apify) y operación
+// ─────────────────────────────────────────────────────────────────
+
+enum ApifyRunStatus {
+  EN_EJECUCION
+  COMPLETADO
+  FALLIDO
+}
+
+model ApifyRun {
+  id           String         @id @default(cuid())
+  actorId      String
+  runId        String?
+  status       ApifyRunStatus @default(EN_EJECUCION)
+  input        Json           // { ciudad, categoria, keywords, maxResults }
+  totalResults Int            @default(0)
+  newLeads     Int            @default(0)
+  duplicates   Int            @default(0)
+  error        String?
+  startedAt    DateTime       @default(now())
+  finishedAt   DateTime?
+
+  @@index([startedAt])
+  @@map("apify_runs")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  actor     String   @default("system") // system | ai | email de usuario
+  action    String   // lead.created, message.blocked, campaign.started...
+  entity    String?
+  entityId  String?
+  detail    Json?
+  level     String   @default("info") // info | warn | error
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([action])
+  @@map("automation_logs")
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Paquetes comerciales configurables desde el dashboard
+model ServicePackage {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  tagline     String?
+  description String?
+  features    Json     // ["Sitio web básico", "Botón WhatsApp", ...]
+  idealFor    String?
+  priceMinCop Int?
+  priceMaxCop Int?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("service_packages")
+}
