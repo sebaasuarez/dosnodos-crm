@@ -1,0 +1,9 @@
+{
+  "crons": [
+    { "path": "/api/jobs/lead-discovery", "schedule": "0 7 * * *" },
+    { "path": "/api/jobs/lead-enrichment", "schedule": "30 7 * * *" },
+    { "path": "/api/jobs/campaign-preparation", "schedule": "0 9-18 * * 1-6" },
+    { "path": "/api/jobs/follow-up", "schedule": "0 8 * * 1-6" },
+    { "path": "/api/jobs/daily-report", "schedule": "0 19 * * *" }
+  ]
+}
