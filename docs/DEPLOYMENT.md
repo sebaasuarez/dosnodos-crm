@@ -36,20 +36,22 @@
    > El seed crea los usuarios con contraseña `dosnodos2026` — **cámbialas de inmediato**
    > (por ahora: actualizando `passwordHash` con un hash bcrypt nuevo).
 
-5. **Crons**: `vercel.json` ya define los 5 jobs. Vercel los invoca con
-   `Authorization: Bearer $CRON_SECRET` automáticamente al tener la variable definida.
+5. **Crons**: el plan Hobby (gratuito) de Vercel permite máximo 2 cron jobs y una
+   ejecución diaria cada uno. Por eso `vercel.json` define **un solo cron diario**
+   (`/api/jobs/daily-all`, 12:00 UTC = 07:00 Bogotá) que ejecuta los 5 jobs en
+   secuencia: discovery → enrichment → campaign-preparation → follow-up → daily-report.
+   Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente al tener la variable definida.
 
-   | Job | Horario (UTC) | Función |
-   |---|---|---|
-   | lead-discovery | 07:00 (02:00 Bogotá) | Apify diario |
-   | lead-enrichment | 07:30 | score + recomendación de pendientes |
-   | campaign-preparation | cada hora 9-18 L-S | audiencias + envíos de campañas |
-   | follow-up | 08:00 L-S | tareas de seguimiento, alertas |
-   | daily-report | 19:00 | snapshot diario |
+   **Mayor frecuencia de campañas** (opcional): en Hobby, los envíos de campaña corren
+   una vez al día. Para procesarlos varias veces al día tienes dos opciones:
+   - **Cron externo gratuito** (cron-job.org, GitHub Actions): pega a
+     `POST https://<dominio>/api/jobs/campaign-preparation` con header
+     `x-cron-secret: $CRON_SECRET` cada hora en horario comercial.
+   - **Upgrade a Vercel Pro**: permite crons por hora; entonces puedes volver a los
+     5 crons separados con las frecuencias originales.
 
-   > Nota: los horarios de `vercel.json` están en UTC. Bogotá es UTC-5 — ajusta si
-   > quieres que los envíos de campaña coincidan con horario comercial local (el guard
-   > bloquea fuera de 8:00–19:00 Bogotá de todas formas).
+   El guard de cumplimiento bloquea envíos fuera de 8:00–19:00 Bogotá de todas formas,
+   así que la frecuencia extra solo acelera el ritmo dentro de ese horario.
 
 6. **Webhook de Kapso**: en Kapso configura la URL
    `https://<tu-dominio>/api/webhooks/kapso` y el header/secreto igual a
