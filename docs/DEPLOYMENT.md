@@ -53,6 +53,16 @@
    El guard de cumplimiento bloquea envíos fuera de 8:00–19:00 Bogotá de todas formas,
    así que la frecuencia extra solo acelera el ritmo dentro de ese horario.
 
+   > ⚠️ **Límite de duración de funciones (Hobby): 60 segundos máximo.** Por defecto
+   > Vercel corta las funciones a los 10s; `/api/apify/run` y `/api/jobs/[job]` declaran
+   > `export const maxDuration = 60` para extenderlo al tope permitido en Hobby. El
+   > scraping real de Apify (varios negocios) y el envío de varios mensajes de WhatsApp
+   > en el mismo `daily-all` pueden acercarse a ese límite con volumen alto. Si el cron
+   > empieza a fallar por timeout (revisa `/logs` y los runtime logs de Vercel), las
+   > opciones son: bajar `leadHunter.maxLeadsPerDay` en Configuración, dividir
+   > `daily-all` en llamadas separadas desde un cron externo, o subir a Vercel Pro
+   > (permite hasta 300s).
+
 6. **Webhook de Kapso**: en Kapso configura la URL
    `https://<tu-dominio>/api/webhooks/kapso` y el header/secreto igual a
    `KAPSO_WEBHOOK_SECRET`. Verifica con un mensaje real que el payload coincida con lo
