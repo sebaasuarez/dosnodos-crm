@@ -79,6 +79,7 @@ enum LeadSourceType {
   ANUNCIO
   REFERIDO
   MANUAL
+  CSV_IMPORT
 }
 
 model Lead {

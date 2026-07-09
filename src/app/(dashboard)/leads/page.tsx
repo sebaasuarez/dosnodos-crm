@@ -4,6 +4,7 @@ import {
   LEAD_STATUS_LABELS, CONSENT_LABELS, SOURCE_LABELS,
   scoreColor, consentColor, formatDate,
 } from "@/lib/format";
+import { CsvImportPanel } from "@/components/forms";
 import type { Prisma, LeadStatus, ConsentStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -50,8 +51,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           <h1 className="text-2xl font-semibold">Leads</h1>
           <p className="text-sm text-slate-500">{total} leads en total</p>
         </div>
-        <a href="/api/reports/export" className="btn-secondary text-sm">⬇ Exportar CSV</a>
+        <div className="flex gap-2">
+          <a href="/api/reports/export" className="btn-secondary text-sm">⬇ Exportar CSV</a>
+        </div>
       </header>
+
+      <CsvImportPanel />
 
       {/* Filtros (form GET, sin JS) */}
       <form method="GET" className="card flex flex-wrap items-end gap-3 p-4">

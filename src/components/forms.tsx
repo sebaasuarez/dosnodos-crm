@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { parseCsv } from "@/lib/csv-parse";
 
 /** Formularios cliente del CRM. Todos usan la API interna y refrescan la vista. */
 
@@ -410,5 +411,141 @@ export function SettingsForm({ initial }: { initial: Record<string, unknown> }) 
         {saved && <span className="text-sm text-emerald-600">✓ Guardado</span>}
       </div>
     </form>
+  );
+}
+
+type CsvImportResult = {
+  totalRows: number;
+  created: number;
+  duplicates: number;
+  errors: { rowNumber: number; reason: string }[];
+};
+
+export function CsvImportPanel() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [csvText, setCsvText] = useState("");
+  const [preview, setPreview] = useState<{ headers: string[]; rows: string[][]; totalDataLines: number } | null>(null);
+  const [result, setResult] = useState<CsvImportResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleFile(f: File) {
+    setFile(f);
+    setResult(null);
+    setError(null);
+    const content = await f.text();
+    setCsvText(content);
+    const table = parseCsv(content);
+    const headers = (table[0] ?? []).map((h) => h.trim());
+    const rows = table.slice(1, 4);
+    setPreview({ headers, rows, totalDataLines: Math.max(0, table.length - 1) });
+  }
+
+  async function confirmImport() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/leads/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: csvText, batchLabel: file?.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) setError(data.error ?? "Error al importar");
+      else {
+        setResult(data as CsvImportResult);
+        router.refresh();
+      }
+    } catch (e) {
+      setError(String(e));
+    }
+    setLoading(false);
+  }
+
+  function reset() {
+    setOpen(false);
+    setFile(null);
+    setPreview(null);
+    setResult(null);
+    setError(null);
+  }
+
+  if (!open) {
+    return (
+      <button className="btn-secondary text-sm" onClick={() => setOpen(true)}>
+        ⬆ Subir CSV de leads
+      </button>
+    );
+  }
+
+  return (
+    <div className="card space-y-3 p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-700">Importar leads desde CSV</h3>
+        <a href="/api/leads/import/template" className="text-xs text-brand-600 hover:underline">
+          Descargar plantilla
+        </a>
+      </div>
+      <p className="text-xs text-slate-500">
+        Estos leads entran <strong>sin consentimiento de WhatsApp</strong> (igual que el Lead
+        Hunter) — deben pasar por opt-in antes de recibir mensajes. Se deduplican por
+        teléfono, email o negocio+ciudad.
+      </p>
+      <input
+        type="file"
+        accept=".csv,text/csv"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+        className="block text-sm"
+      />
+      {preview && (
+        <div className="overflow-x-auto rounded-lg border border-slate-200">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-slate-50">
+                {preview.headers.map((h) => (
+                  <th key={h} className="px-2 py-1 text-left font-medium text-slate-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {preview.rows.map((r, i) => (
+                <tr key={i} className="border-t border-slate-100">
+                  {r.map((c, j) => (
+                    <td key={j} className="px-2 py-1 text-slate-500">{c}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="px-2 py-1 text-xs text-slate-400">
+            Vista previa — {preview.totalDataLines} filas de datos detectadas en total.
+          </p>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-600">⚠ {error}</p>}
+      {result && (
+        <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          ✓ {result.created} leads creados · {result.duplicates} duplicados omitidos
+          {result.errors.length > 0 && ` · ${result.errors.length} filas con error`}
+          {result.errors.length > 0 && (
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-emerald-700">
+              {result.errors.slice(0, 10).map((e, i) => (
+                <li key={i}>Fila {e.rowNumber}: {e.reason}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <button className="btn-primary text-sm" disabled={!file || loading} onClick={confirmImport}>
+          {loading ? "Importando…" : "Confirmar importación"}
+        </button>
+        <button className="btn-secondary text-sm" onClick={reset}>
+          Cerrar
+        </button>
+      </div>
+    </div>
   );
 }

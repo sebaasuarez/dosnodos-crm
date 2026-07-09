@@ -12,6 +12,7 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/webhooks/kapso",
   "/api/public/lead-capture",
+  "/api/public/leads-import",
 ];
 
 const PUBLIC_PREFIXES = ["/api/jobs/", "/_next/", "/favicon"];

@@ -36,6 +36,7 @@ export const SOURCE_LABELS: Record<LeadSourceType, string> = {
   ANUNCIO: "Anuncio",
   REFERIDO: "Referido",
   MANUAL: "Manual",
+  CSV_IMPORT: "Importación CSV",
 };
 
 /** Orden de columnas del Kanban (etapas operativas del pipeline). */

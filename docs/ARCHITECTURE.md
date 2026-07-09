@@ -174,6 +174,9 @@ POST  /api/webhooks/kapso           (público, firma verificada)
 POST  /api/apify/run                GET /api/apify/runs
 POST  /api/opt-in | /api/opt-out    (registro manual con evidencia)
 POST  /api/public/lead-capture      (landing, token + UTM + consentimiento)
+POST  /api/leads/import             (dashboard, CSV autenticado)
+GET   /api/leads/import/template    (plantilla CSV de ejemplo)
+POST  /api/public/leads-import      (automatizaciones externas, CSV_IMPORT_TOKEN — ver docs/CSV_IMPORT.md)
 POST  /api/meetings
 GET   /api/reports/daily | weekly | monthly | export (CSV)
 GET   /api/settings                 PATCH /api/settings (solo ADMIN)
