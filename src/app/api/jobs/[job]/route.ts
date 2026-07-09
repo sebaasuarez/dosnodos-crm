@@ -6,7 +6,12 @@ import { runJob, JOB_NAMES, type JobName } from "@/lib/jobs";
  * Ejecución de jobs programados.
  * Protegido con CRON_SECRET (header `x-cron-secret` o `Authorization: Bearer`).
  * Compatible con Vercel Cron, GitHub Actions, cron-job.org o crontab.
+ *
+ * `daily-all` corre 5 jobs en secuencia (incluye llamadas reales a Apify y Kapso).
+ * 60s es el máximo permitido en el plan Hobby de Vercel sin upgrade — con volumen
+ * alto de leads/campañas puede no alcanzar; ver docs/DEPLOYMENT.md.
  */
+export const maxDuration = 60;
 async function handle(request: Request, params: Promise<{ job: string }>) {
   const denied = requireCronSecret(request);
   if (denied) return denied;
