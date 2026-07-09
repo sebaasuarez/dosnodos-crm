@@ -15,11 +15,39 @@ export const JOB_NAMES = [
   "campaign-preparation",
   "follow-up",
   "daily-report",
+  // Meta-job: ejecuta todos los anteriores en secuencia. Permite operar la
+  // automatización diaria completa con UN solo cron (plan Hobby de Vercel
+  // permite máximo 2 crons, 1 vez/día). Para mayor frecuencia de campañas,
+  // usar un cron externo (cron-job.org) que pegue a /api/jobs/campaign-preparation.
+  "daily-all",
 ] as const;
 
 export type JobName = (typeof JOB_NAMES)[number];
 
+/** Orden de ejecución del meta-job diario. */
+const DAILY_SEQUENCE: Exclude<JobName, "daily-all">[] = [
+  "lead-discovery",
+  "lead-enrichment",
+  "campaign-preparation",
+  "follow-up",
+  "daily-report",
+];
+
 export async function runJob(name: JobName): Promise<Record<string, unknown>> {
+  if (name === "daily-all") {
+    await audit({ action: "job.daily-all.started" });
+    const results: Record<string, unknown> = {};
+    for (const job of DAILY_SEQUENCE) {
+      try {
+        results[job] = await runJob(job);
+      } catch (err) {
+        results[job] = { error: String(err) };
+      }
+    }
+    await audit({ action: "job.daily-all.completed", detail: JSON.parse(JSON.stringify(results)) });
+    return results;
+  }
+
   await audit({ action: `job.${name}.started` });
   try {
     const result = await JOBS[name]();
@@ -34,7 +62,7 @@ export async function runJob(name: JobName): Promise<Record<string, unknown>> {
   }
 }
 
-const JOBS: Record<JobName, () => Promise<Record<string, unknown>>> = {
+const JOBS: Record<Exclude<JobName, "daily-all">, () => Promise<Record<string, unknown>>> = {
   /** Job 1: descubre leads nuevos con Apify por ciudad/categoría rotativa. */
   "lead-discovery": async () => {
     const enabled = await getSetting("leadHunter.enabled");
