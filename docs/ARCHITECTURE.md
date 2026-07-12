@@ -180,7 +180,12 @@ POST  /api/public/leads-import      (automatizaciones externas, CSV_IMPORT_TOKEN
 POST  /api/meetings
 GET   /api/reports/daily | weekly | monthly | export (CSV)
 GET   /api/settings                 PATCH /api/settings (solo ADMIN)
-GET/POST /api/jobs/:job             (CRON_SECRET; 5 jobs)
+GET/POST /api/jobs/:job             (CRON_SECRET; 4 jobs en daily-all + lead-discovery legado invocable aparte)
+GET   /api/cron/lead-hunter         (CRON_SECRET; Lead Hunter automático — ver docs/lead-hunter.md)
+POST  /api/admin/lead-hunter/run    (sesión ADMIN; "Ejecutar ahora" del dashboard)
+GET   /api/admin/lead-hunter/executions            (historial, filtros)
+GET   /api/admin/lead-hunter/executions/:id         (detalle + leads)
+GET   /api/admin/lead-hunter/executions/:id/export  (respaldo CSV del lote)
 ```
 
 ## 6. Plan por fases

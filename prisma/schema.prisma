@@ -65,9 +65,9 @@ enum LeadStatus {
 
 enum ConsentStatus {
   SIN_CONSENTIMIENTO // fuente pública, nunca ha dado permiso → WhatsApp bloqueado
-  PENDIENTE          // en proceso de captación de opt-in (email, landing, QR)
-  OPT_IN             // dio consentimiento explícito o escribió primero
-  OPT_OUT            // pidió no ser contactado → bloqueado permanente
+  PENDIENTE // en proceso de captación de opt-in (email, landing, QR)
+  OPT_IN // dio consentimiento explícito o escribió primero
+  OPT_OUT // pidió no ser contactado → bloqueado permanente
 }
 
 enum LeadSourceType {
@@ -80,27 +80,32 @@ enum LeadSourceType {
   REFERIDO
   MANUAL
   CSV_IMPORT
+  LEAD_HUNTER
 }
 
 model Lead {
-  id            String         @id @default(cuid())
-  companyName   String
-  contactName   String?
-  phone         String?
-  email         String?
-  website       String?
-  address       String?
-  city          String?
-  country       String         @default("Colombia")
-  category      String?
-  source        LeadSourceType @default(MANUAL)
-  sourceUrl     String?
-  sourceDetail  String?        // p.ej. nombre de campaña, run de Apify
-  googleMapsUrl String?        @unique
-  rating        Float?
-  reviewsCount  Int?
-  openingHours  String?
-  socialMedia   Json?          // { instagram, facebook, tiktok, ... }
+  id                    String               @id @default(cuid())
+  companyName           String
+  contactName           String?
+  phone                 String?
+  email                 String?
+  website               String?
+  address               String?
+  city                  String?
+  country               String               @default("Colombia")
+  category              String?
+  source                LeadSourceType       @default(MANUAL)
+  sourceUrl             String?
+  sourceDetail          String? // p.ej. nombre de campaña, run de Apify
+  googleMapsUrl         String?              @unique
+  googlePlaceId         String? // place_id de Google Maps, si Apify lo devuelve
+  // Vínculo opcional a la ejecución de Lead Hunter que creó este lead.
+  leadHunterExecutionId String?
+  leadHunterExecution   LeadHunterExecution? @relation(fields: [leadHunterExecutionId], references: [id])
+  rating                Float?
+  reviewsCount          Int?
+  openingHours          String?
+  socialMedia           Json? // { instagram, facebook, tiktok, ... }
 
   // Señales digitales detectadas
   hasWebsite     Boolean @default(false)
@@ -153,6 +158,8 @@ model Lead {
   @@index([city, category])
   @@index([phone])
   @@index([createdAt])
+  @@index([googlePlaceId])
+  @@index([leadHunterExecutionId])
   @@map("leads")
 }
 
@@ -180,9 +187,9 @@ model ConsentEvent {
   id        String           @id @default(cuid())
   leadId    String
   type      ConsentEventType
-  channel   String           // whatsapp | email | landing | qr | manual
-  source    String?          // de dónde salió el consentimiento (URL, campaña, mensaje)
-  evidence  String?          // texto literal del mensaje/registro que lo prueba
+  channel   String // whatsapp | email | landing | qr | manual
+  source    String? // de dónde salió el consentimiento (URL, campaña, mensaje)
+  evidence  String? // texto literal del mensaje/registro que lo prueba
   createdAt DateTime         @default(now())
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -198,8 +205,8 @@ model ConsentEvent {
 
 enum CampaignType {
   CAPTACION_OPT_IN // email/landing/QR → el prospecto escribe primero
-  SEGUIMIENTO      // solo leads con opt-in
-  REACTIVACION     // solo leads con opt-in previo
+  SEGUIMIENTO // solo leads con opt-in
+  REACTIVACION // solo leads con opt-in previo
   POR_SERVICIO
 }
 
@@ -219,21 +226,21 @@ enum CampaignStatus {
 }
 
 model Campaign {
-  id             String          @id @default(cuid())
-  name           String
-  type           CampaignType
-  channel        CampaignChannel
-  status         CampaignStatus  @default(BORRADOR)
-  audienceFilter Json?           // { ciudades, categorias, scoreMin, consentStatus }
-  dailyLimit     Int             @default(20)
-  hourlyLimit    Int             @default(5)
-  allowedHoursStart Int          @default(8)  // hora local 24h
-  allowedHoursEnd   Int          @default(19)
-  startDate      DateTime?
-  endDate        DateTime?
-  templateId     String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  name              String
+  type              CampaignType
+  channel           CampaignChannel
+  status            CampaignStatus  @default(BORRADOR)
+  audienceFilter    Json? // { ciudades, categorias, scoreMin, consentStatus }
+  dailyLimit        Int             @default(20)
+  hourlyLimit       Int             @default(5)
+  allowedHoursStart Int             @default(8) // hora local 24h
+  allowedHoursEnd   Int             @default(19)
+  startDate         DateTime?
+  endDate           DateTime?
+  templateId        String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   template   WhatsappTemplate?   @relation(fields: [templateId], references: [id])
   recipients CampaignRecipient[]
@@ -288,7 +295,7 @@ model Conversation {
   status              ConversationStatus @default(ABIERTA)
   aiEnabled           Boolean            @default(true) // false = solo humano
   lastMessageAt       DateTime?
-  lastInboundAt       DateTime?          // para ventana de 24h de WhatsApp
+  lastInboundAt       DateTime? // para ventana de 24h de WhatsApp
   assignedToId        String?
   aiSummary           String?
   nextAction          String?
@@ -353,16 +360,16 @@ enum TemplateStatus {
 }
 
 model WhatsappTemplate {
-  id        String         @id @default(cuid())
-  name      String         @unique
-  language  String         @default("es")
-  category  String         @default("MARKETING") // MARKETING | UTILITY
-  body      String
-  variables Json?          // ["nombre", "negocio", "servicio_recomendado"]
-  status    TemplateStatus @default(BORRADOR)
+  id              String         @id @default(cuid())
+  name            String         @unique
+  language        String         @default("es")
+  category        String         @default("MARKETING") // MARKETING | UTILITY
+  body            String
+  variables       Json? // ["nombre", "negocio", "servicio_recomendado"]
+  status          TemplateStatus @default(BORRADOR)
   kapsoTemplateId String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   campaigns Campaign[]
 
@@ -481,7 +488,7 @@ model ApifyRun {
   actorId      String
   runId        String?
   status       ApifyRunStatus @default(EN_EJECUCION)
-  input        Json           // { ciudad, categoria, keywords, maxResults }
+  input        Json // { ciudad, categoria, keywords, maxResults }
   totalResults Int            @default(0)
   newLeads     Int            @default(0)
   duplicates   Int            @default(0)
@@ -493,11 +500,55 @@ model ApifyRun {
   @@map("apify_runs")
 }
 
+enum LeadHunterExecutionStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+enum LeadHunterTriggerType {
+  CRON
+  MANUAL
+}
+
+/**
+ * Registro de cada corrida del Lead Hunter (Apify + IA), sea por cron diario
+ * o disparada manualmente desde el dashboard. Es también el candado de
+ * concurrencia: no se inicia una corrida nueva si ya existe una en RUNNING
+ * reciente (ver src/lib/lead-hunter/run.ts).
+ */
+model LeadHunterExecution {
+  id              String                    @id @default(cuid())
+  status          LeadHunterExecutionStatus @default(RUNNING)
+  triggerType     LeadHunterTriggerType
+  startedAt       DateTime                  @default(now())
+  finishedAt      DateTime?
+  queriesExecuted Int                       @default(0)
+  rawResults      Int                       @default(0)
+  validResults    Int                       @default(0)
+  created         Int                       @default(0)
+  duplicates      Int                       @default(0)
+  invalid         Int                       @default(0)
+  failed          Int                       @default(0)
+  errorSummary    String?
+  batchLabel      String
+  metadata        Json?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  leads Lead[]
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("lead_hunter_executions")
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   actor     String   @default("system") // system | ai | email de usuario
-  action    String   // lead.created, message.blocked, campaign.started...
+  action    String // lead.created, message.blocked, campaign.started...
   entity    String?
   entityId  String?
   detail    Json?
@@ -525,7 +576,7 @@ model ServicePackage {
   name        String   @unique
   tagline     String?
   description String?
-  features    Json     // ["Sitio web básico", "Botón WhatsApp", ...]
+  features    Json // ["Sitio web básico", "Botón WhatsApp", ...]
   idealFor    String?
   priceMinCop Int?
   priceMaxCop Int?

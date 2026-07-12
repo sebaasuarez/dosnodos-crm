@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/jobs/daily-all", "schedule": "0 12 * * *" }
+    { "path": "/api/jobs/daily-all", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/lead-hunter", "schedule": "0 13 * * *" }
   ]
 }

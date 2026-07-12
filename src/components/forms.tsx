@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { parseCsv } from "@/lib/csv-parse";
 
 /** Formularios cliente del CRM. Todos usan la API interna y refrescan la vista. */
@@ -149,6 +150,67 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
       </div>
       {error && <p className="text-xs text-red-600">⚠ {error}</p>}
     </form>
+  );
+}
+
+type LeadHunterRunResult = {
+  executionId: string;
+  alreadyRunning: boolean;
+  status: string;
+  queriesExecuted: number;
+  rawResults: number;
+  validResults: number;
+  created: number;
+  duplicates: number;
+  invalid: number;
+  failed: number;
+};
+
+/**
+ * Botón "Ejecutar ahora" del panel de Lead Hunter. Llama SIEMPRE al endpoint
+ * autenticado /api/admin/lead-hunter/run — nunca al cron
+ * (/api/cron/lead-hunter), que solo acepta el secreto de cron y no una
+ * sesión de navegador.
+ */
+export function LeadHunterRunButton() {
+  const router = useRouter();
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<LeadHunterRunResult | null>(null);
+
+  return (
+    <div>
+      <button
+        className="btn-primary"
+        disabled={running}
+        onClick={async () => {
+          setRunning(true);
+          setError(null);
+          setResult(null);
+          const res = await fetch("/api/admin/lead-hunter/run", { method: "POST" });
+          const data = await res.json().catch(() => ({}));
+          setRunning(false);
+          if (!res.ok) {
+            setError(data.error ?? `Error HTTP ${res.status}`);
+          } else {
+            setResult(data);
+          }
+          router.refresh();
+        }}
+      >
+        {running ? "Ejecutando…" : "Ejecutar ahora"}
+      </button>
+      {error && <p className="mt-2 text-xs text-red-600">⚠ {error}</p>}
+      {result && !result.alreadyRunning && (
+        <p className="mt-2 text-xs text-slate-600">
+          Listo: {result.created} creados, {result.duplicates} duplicados, {result.invalid} inválidos,{" "}
+          {result.failed} fallidos (de {result.rawResults} resultados encontrados).
+        </p>
+      )}
+      {result?.alreadyRunning && (
+        <p className="mt-2 text-xs text-amber-700">Ya hay una ejecución en curso — no se inició una nueva.</p>
+      )}
+    </div>
   );
 }
 
@@ -484,9 +546,9 @@ export function CsvImportPanel() {
     <div className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700">Importar leads desde CSV</h3>
-        <a href="/api/leads/import/template" className="text-xs text-brand-600 hover:underline">
+        <Link href="/api/leads/import/template" className="text-xs text-brand-600 hover:underline">
           Descargar plantilla
-        </a>
+        </Link>
       </div>
       <p className="text-xs text-slate-500">
         Estos leads entran <strong>sin consentimiento de WhatsApp</strong> (igual que el Lead

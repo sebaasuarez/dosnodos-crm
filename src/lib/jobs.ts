@@ -24,9 +24,17 @@ export const JOB_NAMES = [
 
 export type JobName = (typeof JOB_NAMES)[number];
 
-/** Orden de ejecución del meta-job diario. */
-const DAILY_SEQUENCE: Exclude<JobName, "daily-all">[] = [
-  "lead-discovery",
+/**
+ * Orden de ejecución del meta-job diario.
+ *
+ * "lead-discovery" (rotación de 1 ciudad/categoría vía el Apify legado) se
+ * retira de esta secuencia: el cron dedicado /api/cron/lead-hunter cubre ese
+ * mismo propósito de forma más completa (14 búsquedas configurables + IA).
+ * Mantener ambos correría Apify dos veces al día de forma redundante. El job
+ * y el endpoint manual (`POST /api/apify/run`) siguen disponibles sin
+ * cambios para búsquedas puntuales.
+ */
+const DAILY_SEQUENCE: Exclude<JobName, "daily-all" | "lead-discovery">[] = [
   "lead-enrichment",
   "campaign-preparation",
   "follow-up",

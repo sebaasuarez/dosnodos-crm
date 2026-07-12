@@ -15,7 +15,7 @@ const PUBLIC_PATHS = [
   "/api/public/leads-import",
 ];
 
-const PUBLIC_PREFIXES = ["/api/jobs/", "/_next/", "/favicon"];
+const PUBLIC_PREFIXES = ["/api/jobs/", "/api/cron/", "/_next/", "/favicon"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

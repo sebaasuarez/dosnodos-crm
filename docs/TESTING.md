@@ -2,6 +2,13 @@
 
 Estado verificado en desarrollo (Postgres real + modo simulado de integraciones).
 
+> **Lead Hunter automático**: tiene su propia suite automatizada (`npm run
+> test`, vitest) que mockea Apify/OpenAI y nunca los llama de verdad — ver
+> `docs/lead-hunter.md`. La fila #4 de esta tabla describe el Lead Hunter
+> legado de búsqueda manual puntual (`/api/apify/run`); la captura diaria
+> automática ahora corre por `/api/cron/lead-hunter` (cron dedicado), no por
+> `lead-discovery` dentro de `daily-all`.
+
 ## Verificado automáticamente en esta entrega
 
 | # | Criterio | Estado | Cómo se probó |

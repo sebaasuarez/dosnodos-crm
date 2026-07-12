@@ -24,6 +24,18 @@
    APIFY_GOOGLE_MAPS_ACTOR_ID compass~crawler-google-places
    ANTHROPIC_API_KEY         (console.anthropic.com)
    ANTHROPIC_MODEL           claude-opus-4-8
+
+   # Lead Hunter automático (cron diario) — ver docs/lead-hunter.md
+   LEAD_HUNTER_ENABLED           true
+   LEAD_HUNTER_DAILY_LIMIT       20
+   LEAD_HUNTER_CITY              Medellín
+   LEAD_HUNTER_COUNTRY           Colombia
+   LEAD_HUNTER_TIMEZONE          America/Bogota
+   LEAD_HUNTER_NOTIFICATION_EMAIL  (a quién le llega el resumen por corrida)
+   LEAD_HUNTER_FROM_EMAIL        (remitente verificado en Resend)
+   OPENAI_API_KEY                (platform.openai.com — enriquecimiento con IA)
+   OPENAI_MODEL                  gpt-4o-mini
+   RESEND_API_KEY                (resend.com — envío del correo de resumen)
    ```
 
 4. **Migraciones**: en el primer deploy ejecuta desde tu máquina:
@@ -37,9 +49,17 @@
    > (por ahora: actualizando `passwordHash` con un hash bcrypt nuevo).
 
 5. **Crons**: el plan Hobby (gratuito) de Vercel permite máximo 2 cron jobs y una
-   ejecución diaria cada uno. Por eso `vercel.json` define **un solo cron diario**
-   (`/api/jobs/daily-all`, 12:00 UTC = 07:00 Bogotá) que ejecuta los 5 jobs en
-   secuencia: discovery → enrichment → campaign-preparation → follow-up → daily-report.
+   ejecución diaria cada uno. `vercel.json` usa los dos disponibles:
+
+   - `/api/jobs/daily-all` (12:00 UTC = 07:00 Bogotá) — ejecuta en secuencia
+     enrichment → campaign-preparation → follow-up → daily-report.
+   - `/api/cron/lead-hunter` (13:00 UTC = 08:00 Bogotá) — el Lead Hunter
+     automático (14 búsquedas + IA). Ver **docs/lead-hunter.md** para el detalle
+     completo (variables, dashboard, pruebas, rollback). El job legado
+     `lead-discovery` (dentro de `daily-all`) se retiró de la secuencia
+     automática para no correr Apify dos veces al día — sigue disponible para
+     pruebas puntuales vía `POST /api/apify/run`.
+
    Vercel envía `Authorization: Bearer $CRON_SECRET` automáticamente al tener la variable definida.
 
    **Mayor frecuencia de campañas** (opcional): en Hobby, los envíos de campaña corren
