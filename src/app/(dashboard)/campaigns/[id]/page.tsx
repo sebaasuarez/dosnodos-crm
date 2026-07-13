@@ -24,10 +24,10 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-5">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Link href="/campaigns" className="text-xs text-slate-400 hover:text-brand-600">← Campañas</Link>
-          <h1 className="text-2xl font-semibold">{campaign.name}</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">{campaign.name}</h1>
           <p className="text-sm text-slate-500">
             {campaign.type} · {campaign.channel} · {campaign.status} · límite {campaign.dailyLimit}/día
           </p>

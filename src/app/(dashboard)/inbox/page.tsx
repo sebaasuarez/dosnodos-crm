@@ -34,10 +34,10 @@ export default async function InboxPage({
     : null;
 
   return (
-    <div className="flex h-full flex-col space-y-4">
-      <header className="flex items-center justify-between">
+    <div className="flex flex-col space-y-4 lg:h-full">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">WhatsApp Inbox</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">WhatsApp Inbox</h1>
           <p className="text-sm text-slate-500">{conversations.length} conversaciones abiertas</p>
         </div>
         <div className="flex gap-2 text-sm">
@@ -50,9 +50,9 @@ export default async function InboxPage({
         </div>
       </header>
 
-      <div className="grid flex-1 gap-4 overflow-hidden lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[320px_1fr] lg:overflow-hidden">
         {/* Lista de conversaciones */}
-        <div className="card overflow-y-auto">
+        <div className="card max-h-72 overflow-y-auto lg:max-h-none">
           {conversations.length === 0 && (
             <p className="p-6 text-center text-sm text-slate-400">
               Sin conversaciones. Llegarán aquí cuando alguien escriba por WhatsApp (webhook de Kapso).
@@ -88,7 +88,7 @@ export default async function InboxPage({
 
         {/* Detalle de conversación */}
         {selected ? (
-          <div className="card flex flex-col overflow-hidden">
+          <div className="card flex min-h-[60vh] flex-col overflow-hidden lg:min-h-0">
             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
               <div>
                 <Link href={`/leads/${selected.lead.id}`} className="text-sm font-semibold hover:text-brand-600">

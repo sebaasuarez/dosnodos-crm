@@ -85,7 +85,7 @@ export default async function LeadHunterPage({
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold">Lead Hunter</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Lead Hunter</h1>
         <p className="text-sm text-slate-500">
           Búsqueda y captura diaria de prospectos desde Google Maps (Apify) + enriquecimiento con IA.
           Los leads entran <strong>sin consentimiento de WhatsApp</strong> y pasan por scoring y

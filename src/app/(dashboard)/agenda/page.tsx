@@ -26,7 +26,7 @@ export default async function AgendaPage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold">Agenda</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Agenda</h1>
         <p className="text-sm text-slate-500">
           Reuniones y llamadas de diagnóstico. La integración con Google Calendar es opcional
           (variables GOOGLE_CALENDAR_*).

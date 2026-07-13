@@ -23,7 +23,7 @@ export default async function PipelinePage() {
   return (
     <div className="flex h-full flex-col space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold">Pipeline comercial</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Pipeline comercial</h1>
         <p className="text-sm text-slate-500">
           {leads.length} leads activos · cambia la etapa desde cada tarjeta
         </p>

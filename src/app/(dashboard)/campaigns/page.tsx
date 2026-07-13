@@ -29,7 +29,7 @@ export default async function CampaignsPage() {
     <div className="space-y-5">
       <header className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Campañas</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Campañas</h1>
           <p className="text-sm text-slate-500">
             Las campañas de WhatsApp solo envían a leads con opt-in. Los envíos respetan
             límites diarios, horarios y frecuencia por lead.

@@ -10,12 +10,12 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Reportes</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Reportes</h1>
           <p className="text-sm text-slate-500">Vista semanal y mensual del desempeño comercial</p>
         </div>
-        <a href="/api/reports/export" className="btn-secondary text-sm">⬇ Exportar leads (CSV)</a>
+        <a href="/api/reports/export" className="btn-secondary shrink-0 text-sm">⬇ Exportar leads (CSV)</a>
       </header>
 
       <section>

@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold">Configuración</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Configuración</h1>
         <p className="text-sm text-slate-500">
           Límites de envío, Lead Hunter, IA, paquetes, plantillas y usuarios.
         </p>

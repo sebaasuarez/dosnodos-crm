@@ -22,7 +22,7 @@ export default async function LogsPage({
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold">Logs y auditoría</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Logs y auditoría</h1>
         <p className="text-sm text-slate-500">
           Trazabilidad completa: leads, mensajes, bloqueos, campañas, jobs y configuración.
         </p>

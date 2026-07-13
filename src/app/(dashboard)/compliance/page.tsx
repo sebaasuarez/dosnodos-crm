@@ -48,7 +48,7 @@ export default async function CompliancePage() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold">Cumplimiento y reputación</h1>
+        <h1 className="text-xl font-semibold sm:text-2xl">Cumplimiento y reputación</h1>
         <p className="text-sm text-slate-500">
           El sistema bloquea automáticamente: envíos sin opt-in, fuera de horario
           ({hoursStart}:00–{hoursEnd}:00), sobre el límite diario y a leads con opt-out.

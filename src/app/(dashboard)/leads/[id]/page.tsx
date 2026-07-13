@@ -36,7 +36,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/leads" className="text-xs text-slate-400 hover:text-brand-600">← Leads</Link>
-          <h1 className="text-2xl font-semibold">{lead.companyName}</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">{lead.companyName}</h1>
           <p className="text-sm text-slate-500">
             {lead.category ?? "Sin categoría"} · {lead.city ?? "—"} · Fuente: {SOURCE_LABELS[lead.source]}
           </p>

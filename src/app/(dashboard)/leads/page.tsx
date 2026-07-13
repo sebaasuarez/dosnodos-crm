@@ -46,9 +46,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Leads</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Leads</h1>
           <p className="text-sm text-slate-500">{total} leads en total</p>
         </div>
         <div className="flex gap-2">

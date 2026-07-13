@@ -17,14 +17,14 @@ export default async function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Resumen general</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Resumen general</h1>
           <p className="text-sm text-slate-500">
             {new Intl.DateTimeFormat("es-CO", { dateStyle: "full", timeZone: "America/Bogota" }).format(new Date())}
           </p>
         </div>
-        <Link href="/lead-hunter" className="btn-primary">
+        <Link href="/lead-hunter" className="btn-primary shrink-0">
           ◎ Buscar leads hoy
         </Link>
       </header>
