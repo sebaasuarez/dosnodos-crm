@@ -38,10 +38,17 @@
    RESEND_API_KEY                (resend.com — envío del correo de resumen)
    ```
 
-4. **Migraciones**: en el primer deploy ejecuta desde tu máquina:
+4. **Migraciones**: el script `build` (`prisma generate && prisma migrate deploy && next build`)
+   aplica las migraciones pendientes automáticamente en cada deploy de Vercel, usando la
+   `DATABASE_URL` ya configurada como variable de entorno — no requiere ejecutar nada a mano.
+   Es idempotente: si no hay migraciones nuevas, no hace nada. Si una migración falla, el
+   build completo falla y Vercel no cambia el tráfico de producción (el deploy anterior
+   sigue sirviendo tal cual) — es un fallo seguro.
+
+   El **seed** (datos de ejemplo) sí es manual y solo debe correrse una vez, en la primera
+   puesta en marcha:
 
    ```bash
-   DATABASE_URL="postgresql://..." npx prisma migrate deploy
    DATABASE_URL="postgresql://..." npm run db:seed
    ```
 
